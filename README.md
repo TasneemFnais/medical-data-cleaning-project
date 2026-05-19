@@ -165,6 +165,26 @@ I have a clinical background, which shaped a few deliberate decisions:
 
 ---
 
+## 🔮 Future Work
+
+### Further normalization
+- **Diagnoses table.** A patient can have multiple diagnoses - currently stored as one per row (a 1NF violation, same as medications). A `patient_diagnoses` table linked to a `diagnoses` lookup (ICD-10 codes with names and categories) would support multiple diagnoses per patient.
+- **Insurance table.** Moving `insurance_provider`, `insurance_id`, `payment_status`, and `total_charges` into a separate `patient_insurance` table would cleanly separate clinical from financial data, a common architectural split in hospital information systems.
+- **Reference (lookup) tables** for `department`, `ward`, and `blood_type`, enforcing valid values via foreign key constraints to prevent typos at insertion.
+
+### Additional data quality checks
+- **Logical consistency validation** - cross-field rules like *discharge before admission*, *follow-up before discharge*, or *age vs. DOB mismatch*.
+- **Out-of-range vital signs.** Heart rate, temperature, blood pressure, weight, and height all have clinically plausible ranges - values outside them likely indicate data entry errors.
+- **PHI / cross-patient references in free text.** The `notes` field may contain other patient IDs, family names, or addresses. privacy risks worth flagging (or detecting via NER in a more advanced version).
+- **Format validation** via regex on structured identifiers like `insurance_id`.
+
+### Automation & traceability
+- **Trigger-based flagging.** A MySQL trigger on INSERT/UPDATE would recompute the data quality flag automatically as new rows arrive.
+- **Audit columns** (`created_at`, `updated_at`, `created_by`, `updated_by`) — essential for compliance in healthcare contexts (HIPAA, GDPR).
+- **Slowly Changing Dimensions (SCD).** Tracking history with `valid_from` / `valid_to` columns preserves the timeline of changing attributes like insurance.
+
+---
+
 ## 📚 Lessons Learned
 
 - **Pipeline ordering matters.** Quality flagging originally ran early in the script but referenced columns created later. Reorganizing it to run after all dependencies made the pipeline reproducible from a fresh database.
